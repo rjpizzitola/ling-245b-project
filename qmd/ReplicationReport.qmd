@@ -1,7 +1,7 @@
 ---
 title: Replication of "Experience With a Linguistic Variant Affects the Acquisition of Its Sociolinguistic Meaning: An Alien-Language-Learning Experiment" by Wei Lai, Peter Racz, & Gareth Robertsa (2020, Cognitive Science)
 author: Rebecca Pizzitola (rjpizzit@stanford.edu)
-date: `r format(Sys.time(), '%B %d, %Y')`
+date: "`r format(Sys.time(), '%B %d, %Y')`"
 format:
   html:
     toc: true
