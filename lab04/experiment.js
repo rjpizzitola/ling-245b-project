@@ -289,7 +289,7 @@ const save_data = {
   action: "save",
   experiment_id: "9JeF3mkj4UuR",
   filename: filename,
-  data_string: jsPsych.data.get().csv(),
+  data: jsPsych.data.get().csv(),
 };
 
 // --- Run experiment ---
