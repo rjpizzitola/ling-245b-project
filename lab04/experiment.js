@@ -305,4 +305,5 @@ const timeline = [
   save_data,
 ];
 
+console.log("PRACTICE BUILD");
 jsPsych.run(timeline);
