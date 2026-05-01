@@ -289,10 +289,10 @@ const save_data = {
   type: jsPsychPipe,
   action: "save",
   experiment_id: "9JeF3mkj4UuR",
-  // filename: filename,
-  // data_string: () => jsPsych.data.get().csv(),
-  filename: "test.csv",
-  data: "a,b,c\n1,2,3",
+  filename: filename,
+  data_string: () => jsPsych.data.get().csv(),
+  // filename: "test.csv",
+  // data: "a,b,c\n1,2,3",
 };
 
 const endScreen = {
