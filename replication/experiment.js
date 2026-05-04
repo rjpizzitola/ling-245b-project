@@ -139,11 +139,12 @@ function buildPassiveExposureTrial(word, isPlural, suffix, phase) {
   };
 }
 
-function buildForcedChoiceTrial(word, suffix, foilSuffix, phase) {
-  // Forced-choice: participant sees a plural image and picks the correct word
-  // foilSuffix is the suffix on the incorrect option (always the other suffix)
+function buildForcedChoiceTrial(word, suffix, phase) {
+  // Forced-choice: stem identification only. Both options carry the same suffix
+  // so NoExposure participants never see -nup in Stage 1. The foil differs
+  // only in the stem (word.foil).
   const correctWord = `${word.root}${suffix}`;
-  const foilWord = `${word.foil}${foilSuffix}`;
+  const foilWord = `${word.foil}${suffix}`;
   const options = shuffle([correctWord, foilWord]);
   const correctIndex = options.indexOf(correctWord);
 
@@ -225,11 +226,8 @@ function buildStage1Timeline() {
       const fcWords = shuffle([...wordSet]).slice(0, 2);
       for (const word of fcWords) {
         const suffix = getSuffix(word);
-        const foilSuffix = suffix === "dup" ? "nup" : "dup";
         const correctWord = `${word.root}${suffix}`;
-        timeline.push(
-          buildForcedChoiceTrial(word, suffix, foilSuffix, "stage1"),
-        );
+        timeline.push(buildForcedChoiceTrial(word, suffix, "stage1"));
         timeline.push(buildFeedbackTrial(correctWord, "stage1"));
       }
     }
@@ -430,9 +428,9 @@ function buildPassiveExposureTrial2(word, isPlural, suffix, species, phase) {
 }
 
 function buildForcedChoiceTrial2(word, suffix, species, phase) {
-  const foilSuffix = suffix === "dup" ? "nup" : "dup";
+  // Stem identification: foil carries the same suffix, differs only in stem.
   const correctWord = `${word.root}${suffix}`;
-  const foilWord = `${word.foil}${foilSuffix}`;
+  const foilWord = `${word.foil}${suffix}`;
   const options = shuffle([correctWord, foilWord]);
   const correctIndex = options.indexOf(correctWord);
   const alienImage = pick(aliens.find((a) => a.name === species).images);
@@ -540,16 +538,24 @@ function buildSuffixSelectionTrial(word, species, isNovel, rep) {
 
   let stimulusHTML;
   if (isNovel) {
-    // Novel words: show singular form + image, ask for plural
+    // Novel words: singular (labelled) on left, plural image with "?" on right
     stimulusHTML = `
       <div class="trial-box">
         <div class="alien-speaker">
           ${img(alienImage, "alien-small")}
           <span class="species-label ${labelClass}">${species}</span>
         </div>
-        ${img(word.singular_image, "stim-image")}
-        <p class="word-display">${word.root}</p>
-        <p class="instr-text">Which plural form would this ${species} use?</p>
+        <div class="novel-word-pair">
+          <div class="novel-word-item">
+            ${img(word.singular_image, "stim-image")}
+            <p class="word-display">${word.root}</p>
+          </div>
+          <div class="novel-word-item">
+            ${img(word.plural_image, "stim-image")}
+            <p class="word-display novel-unknown">?</p>
+          </div>
+        </div>
+        <p class="instr-text">Which word would this ${species} use?</p>
       </div>`;
   } else {
     // Old words: show plural image directly (stem known from training)
@@ -560,7 +566,7 @@ function buildSuffixSelectionTrial(word, species, isNovel, rep) {
           <span class="species-label ${labelClass}">${species}</span>
         </div>
         ${img(word.plural_image, "stim-image")}
-        <p class="instr-text">Which plural form would this ${species} use?</p>
+        <p class="instr-text">Which word would this ${species} use?</p>
       </div>`;
   }
 
@@ -664,12 +670,12 @@ function buildAlienSelectionTrial(word, suffix, isNovel) {
       <div class="trial-box">
         <div class="alien-choices-header">
           <div class="alien-option">
-            ${img(testAliens["gulu"], "alien-medium")}
-            <span class="species-label gulu-label">Gulu</span>
-          </div>
-          <div class="alien-option">
             ${img(testAliens["norl"], "alien-medium")}
             <span class="species-label norl-label">Norl</span>
+          </div>
+          <div class="alien-option">
+            ${img(testAliens["gulu"], "alien-medium")}
+            <span class="species-label gulu-label">Gulu</span>
           </div>
         </div>
         <div class="word-display">${displayWord}</div>
@@ -738,7 +744,7 @@ const debrief = {
 const save_data = {
   type: jsPsychPipe,
   action: "save",
-  experiment_id: "PIPE_EXPERIMENT_ID", // ← replace with your DataPipe experiment ID
+  experiment_id: "9JeF3mkj4UuR",
   filename: filename,
   data_string: () => jsPsych.data.get().csv(),
 };
@@ -765,12 +771,12 @@ const suffixTask = buildSuffixSelectionTimeline();
 const alienTask = buildAlienSelectionTimeline();
 
 const timeline = [
-  welcome,
-  instructions_stage1,
-  ...stage1,
-  ...alienFam,
-  instructions_stage2,
-  ...stage2,
+  // welcome,
+  // instructions_stage1,
+  // ...stage1,
+  // ...alienFam,
+  // instructions_stage2,
+  // ...stage2,
   instructions_test,
   ...suffixTask,
   ...alienTask,
