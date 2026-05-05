@@ -30,7 +30,21 @@ identification from participants.
 
 ### Power Analysis
 
-Original effect size, power analysis for samples to achieve 80%, 90%, 95% power to detect that effect size.  Considerations of feasibility for selecting planned sample size.
+The manuscript doesn't explicitly report a power analysis for Experiment 1; the sample size choice isn't explicitly motivated in the methods section.
+I ran a power analysis based on the effect sizes reported in Table 2 of the original paper as it shows the mixed-effects logistic regression coefficients, and ran simulations to find n for 80%, 90%, and 95% power.
+
+The relevant effect sizes from Table 2 are:
+- Suffix selection -- Alien(Gulu):Condition(NoExposure) == Coef. -0.51, SE 0.10, zValue -4.93
+- Alien selection -- Suffix(nup):Condition(NoExposure) == Coef. 1.05, SE 0.13, zValue 7.81
+Others were reported but this experiment is investigating the relationship between condition and selection, so this interaction is what we care about.
+
+The best approach for a power analysis is an R-based simulation using the suffix selection coefficients (as these effect sizes were the smaller of the two). Random effects not reported so I ran SD = 0.3, 0.5, 0.8
+The file for this is replication/power_analysis.R, I ran it in VSCode with an R extension. Claude code was used for help debugging the code.
+
+The most conservative estimates for effect size and random effects show that a minimum of n=145 is needed to achieve 80% power, and n=150 for 95% power.
+This was run on 100 simulations, and for final power analyses I will rerun the analysis on 1000 simulations.
+
+The ideal number of participants for this study would be around 150 people. In the time frame of this course, I don't know that 150 recruits is feasible, which is unfortunate because the lower n estimates are not close to the effect sizes.
 
 ### Planned Sample
 
