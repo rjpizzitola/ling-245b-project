@@ -15,7 +15,7 @@
 #   Suffix selection:  alienGulu:conditionNoExposure   beta = -0.51
 #   Alien selection:   suffixnup:conditionNoExposure   beta =  1.05
 #
-# Collaboration note: Claude code helped me a LOT with this, particularly the plotting, because I had never used R before and this was a complicated procedure to write up.
+# Collaboration note: Claude code helped me a LOT with this because I had never used R before, missed the class about this and this was a complicated procedure to write up.
 # =============================================================================
 
 # --- 0. Packages --------------------------------------------------------------
@@ -262,64 +262,4 @@ print(wide, row.names = FALSE)
 cat("\nNote: NA = power did not reach that threshold within N =",
     max(n_breaks), "-- increase n_breaks ceiling.\n")
 
-# --- 9. Power curve plot ------------------------------------------------------
-
-curve_all <- safe_rbind(res_suffix$curve, res_alien$curve)
-if (is.null(curve_all)) stop("No curve data to plot -- all models failed.")
-curve_all$re_sd_label <- paste0("RE SD = ", curve_all$re_sd)
-
-p <- ggplot(curve_all,
-            aes(x = n, y = mean, colour = re_sd_label, fill = re_sd_label)) +
-  geom_hline(yintercept = 0.80,  linetype = "dashed",   colour = "grey30", linewidth = 0.5) +
-  geom_hline(yintercept = 0.90,  linetype = "dotted",   colour = "grey30", linewidth = 0.5) +
-  geom_hline(yintercept = 0.95,  linetype = "longdash", colour = "grey30", linewidth = 0.5) +
-  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.15, colour = NA) +
-  geom_line(linewidth = 0.85) +
-  geom_point(size = 2.2) +
-  annotate("text", x = max(n_breaks), y = 0.80,
-           label = "80%", hjust = -0.1, size = 3.2, colour = "grey30") +
-  annotate("text", x = max(n_breaks), y = 0.90,
-           label = "90%", hjust = -0.1, size = 3.2, colour = "grey30") +
-  annotate("text", x = max(n_breaks), y = 0.95,
-           label = "95%", hjust = -0.1, size = 3.2, colour = "grey30") +
-  scale_y_continuous(
-    limits = c(0, 1), breaks = seq(0, 1, 0.2),
-    labels = scales::percent_format(accuracy = 1),
-    expand = expansion(mult = c(0.01, 0.01))
-  ) +
-  scale_x_continuous(
-    breaks = n_breaks,
-    expand = expansion(mult = c(0.02, 0.08))
-  ) +
-  scale_colour_manual(values = c("#2c5f8a", "#3a7d44", "#c0392b")) +
-  scale_fill_manual(  values = c("#2c5f8a", "#3a7d44", "#c0392b")) +
-  facet_wrap(~ task,
-             labeller = labeller(task = c(
-               suffix = "Suffix-selection\n(interaction b = -0.51)",
-               alien  = "Alien-selection\n(interaction b = 1.05)"
-             ))) +
-  labs(
-    title    = "Minimum N power analysis -- Lai et al. (2020) Experiment 1 replication",
-    subtitle = sprintf("%d simulations per cell | RE SD sensitivity sweep", nsim),
-    x        = "Number of participants",
-    y        = "Estimated power",
-    colour   = "Random effects assumption",
-    fill     = "Random effects assumption",
-    caption  = paste0(
-      "Fixed effects from Table 2. Random effects not reported in paper; ",
-      "three assumptions shown.\n",
-      "Shaded bands = 95% CI across simulations."
-    )
-  ) +
-  theme_minimal(base_size = 13) +
-  theme(
-    legend.position  = "bottom",
-    strip.text       = element_text(face = "bold"),
-    panel.grid.minor = element_blank(),
-    plot.caption     = element_text(size = 9, colour = "grey50")
-  )
-
-print(p)
-ggsave("power_curve.png", p, width = 11, height = 6, dpi = 150)
-cat("\nPlot saved to power_curve.png\n")
 cat("Done. Set nsim = 1000 for publication-quality estimates.\n")
