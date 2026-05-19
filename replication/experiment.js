@@ -105,57 +105,80 @@ function getSuffix(word) {
 }
 
 function buildStage1Sets() {
-  // Create all 28 forms (singular + plural for each of the 14 words).
-  // Greedily build sets of 4 with: 4 distinct roots, exactly 2 singular + 2 plural.
-  // If a valid set can't be built from remaining forms, reshuffle and retry.
+  // Step 1: Create all 28 forms (14 roots × 2 forms)
   const allForms = [];
   for (const word of vocabulary) {
     allForms.push({ word, isPlural: false });
     allForms.push({ word, isPlural: true });
   }
-  let formsLeft = shuffle([...allForms]);
-  const sets = [];
 
-  while (formsLeft.length > 0) {
-    const set = [];
-    const usedRoots = new Set();
-    let singularCount = 0;
-    let pluralCount = 0;
+  let tries = 0;
+  const maxTries = 1000;
+  let bestSets = null;
 
-    for (let i = 0; i < formsLeft.length && set.length < 4; i++) {
-      const form = formsLeft[i];
-      const wouldExceedSingular = !form.isPlural && singularCount >= 2;
-      const wouldExceedPlural = form.isPlural && pluralCount >= 2;
-      if (
-        usedRoots.has(form.word.root) ||
-        wouldExceedSingular ||
-        wouldExceedPlural
-      )
-        continue;
-      set.push(form);
-      usedRoots.add(form.word.root);
-      if (form.isPlural) pluralCount++;
-      else singularCount++;
-    }
-
-    if (set.length < 4) {
-      // Can't build a valid set of 4 — reshuffle remaining forms and retry.
-      // This handles edge cases where leftover forms are all the same root/type.
-      formsLeft = shuffle(formsLeft);
-      continue;
-    }
-
-    // Remove selected forms from formsLeft
-    for (const form of set) {
-      const idx = formsLeft.findIndex(
-        (f) => f.word.root === form.word.root && f.isPlural === form.isPlural,
+  // Step 2: Try to divide into 7 sets of 4, each with 2 singular, 2 plural, 4 distinct roots
+  while (tries < maxTries) {
+    tries++;
+    const pool = shuffle([...allForms]);
+    const sets = [];
+    let success = true;
+    for (let s = 0; s < 7; s++) {
+      // Try to pick 4 forms: 2 singular, 2 plural, all distinct roots
+      let set = [];
+      let usedRoots = new Set();
+      let singulars = pool.filter(
+        (f) => !f.isPlural && !usedRoots.has(f.word.root),
       );
-      if (idx !== -1) formsLeft.splice(idx, 1);
+      let plurals = pool.filter(
+        (f) => f.isPlural && !usedRoots.has(f.word.root),
+      );
+      if (singulars.length < 2 || plurals.length < 2) {
+        success = false;
+        break;
+      }
+      // Pick 2 singulars
+      const s1 = singulars[0];
+      usedRoots.add(s1.word.root);
+      const s2 = singulars.find((f) => !usedRoots.has(f.word.root));
+      if (!s2) {
+        success = false;
+        break;
+      }
+      usedRoots.add(s2.word.root);
+      // Pick 2 plurals
+      const p1 = plurals.find((f) => !usedRoots.has(f.word.root));
+      if (!p1) {
+        success = false;
+        break;
+      }
+      usedRoots.add(p1.word.root);
+      const p2 = plurals.find((f) => !usedRoots.has(f.word.root));
+      if (!p2) {
+        success = false;
+        break;
+      }
+      usedRoots.add(p2.word.root);
+      set = [s1, s2, p1, p2];
+      // Remove these forms from pool
+      for (const f of set) {
+        const idx = pool.findIndex(
+          (ff) => ff.word.root === f.word.root && ff.isPlural === f.isPlural,
+        );
+        if (idx !== -1) pool.splice(idx, 1);
+      }
+      sets.push(shuffle(set));
     }
-    sets.push(set);
+    if (success && pool.length === 0) {
+      bestSets = sets;
+      break;
+    }
   }
-
-  return sets;
+  if (!bestSets) {
+    throw new Error(
+      "Could not partition forms into 7 valid sets after many tries.",
+    );
+  }
+  return shuffle(bestSets);
 }
 
 function buildPassiveExposureTrial(word, isPlural, suffix, phase) {
@@ -417,75 +440,83 @@ const instructions_stage2 = {
   },
 };
 
-// Build sets of 4 for one species using the same greedy approach as Stage 1:
-// 4 distinct roots, exactly 2 singular + 2 plural. Reshuffles if stuck.
+// Build stage 2 sets, same idea as stage 1 but now with species dimension added
 function buildSpeciesSets(species) {
   const allForms = [];
   for (const word of vocabulary) {
     allForms.push({ word, isPlural: false, species });
     allForms.push({ word, isPlural: true, species });
   }
-  let formsLeft = shuffle([...allForms]);
-  const sets = [];
 
-  while (formsLeft.length > 0) {
-    const set = [];
-    const usedRoots = new Set();
-    let singularCount = 0;
-    let pluralCount = 0;
+  let tries = 0;
+  const maxTries = 1000;
 
-    for (let i = 0; i < formsLeft.length && set.length < 4; i++) {
-      const form = formsLeft[i];
-      const wouldExceedSingular = !form.isPlural && singularCount >= 2;
-      const wouldExceedPlural = form.isPlural && pluralCount >= 2;
-      if (
-        usedRoots.has(form.word.root) ||
-        wouldExceedSingular ||
-        wouldExceedPlural
-      )
-        continue;
-      set.push(form);
-      usedRoots.add(form.word.root);
-      if (form.isPlural) pluralCount++;
-      else singularCount++;
-    }
+  while (tries < maxTries) {
+    tries++;
+    const pool = shuffle([...allForms]);
+    const sets = [];
+    let success = true;
 
-    if (set.length < 4) {
-      formsLeft = shuffle(formsLeft);
-      continue;
-    }
+    for (let s = 0; s < 7; s++) {
+      const usedRoots = new Set();
 
-    for (const form of set) {
-      const idx = formsLeft.findIndex(
-        (f) => f.word.root === form.word.root && f.isPlural === form.isPlural,
+      const singulars = pool.filter(
+        (f) => !f.isPlural && !usedRoots.has(f.word.root),
       );
-      if (idx !== -1) formsLeft.splice(idx, 1);
+      if (singulars.length < 2) {
+        success = false;
+        break;
+      }
+      const s1 = singulars[0];
+      usedRoots.add(s1.word.root);
+      const s2 = singulars.find((f) => !usedRoots.has(f.word.root));
+      if (!s2) {
+        success = false;
+        break;
+      }
+      usedRoots.add(s2.word.root);
+
+      const plurals = pool.filter(
+        (f) => f.isPlural && !usedRoots.has(f.word.root),
+      );
+      if (plurals.length < 2) {
+        success = false;
+        break;
+      }
+      const p1 = plurals[0];
+      usedRoots.add(p1.word.root);
+      const p2 = plurals.find((f) => !usedRoots.has(f.word.root));
+      if (!p2) {
+        success = false;
+        break;
+      }
+
+      const set = [s1, s2, p1, p2];
+      for (const f of set) {
+        const idx = pool.findIndex(
+          (ff) => ff.word.root === f.word.root && ff.isPlural === f.isPlural,
+        );
+        if (idx !== -1) pool.splice(idx, 1);
+      }
+      sets.push(shuffle(set));
     }
-    sets.push(set);
+
+    if (success && pool.length === 0) return shuffle(sets);
   }
 
-  return sets;
+  throw new Error(
+    `buildSpeciesSets(${species}): could not partition after ${maxTries} tries.`,
+  );
 }
 
 function buildStage2Sets() {
-  // Build independent sets of 4 for Gulu and Norl (same greedy constraints as Stage 1).
-  // Then zip them together: each combined set has 8 trials —
-  // 4 Gulu (2 singular + 2 plural, distinct roots) +
+  // Build 7 valid sets of 4 independently for Gulu and Norl, then zip them together.
+  // Each combined set has 8 items: 4 Gulu (2 singular + 2 plural, distinct roots) +
   // 4 Norl (2 singular + 2 plural, distinct roots).
-  // Roots are NOT required to be distinct across species within the same combined set,
-  // matching the paper's constraint that uniqueness applies within each species block.
+  // Roots are not required to be unique across species within the same combined set.
   const guluSets = buildSpeciesSets("Gulu");
   const norlSets = buildSpeciesSets("Norl");
-
-  // Zip: pair guluSets[i] with norlSets[i]. If one list is longer, append remainder solo.
-  const n = Math.max(guluSets.length, norlSets.length);
-  const combined = [];
-  for (let i = 0; i < n; i++) {
-    const guluSet = guluSets[i] || [];
-    const norlSet = norlSets[i] || [];
-    combined.push([...guluSet, ...norlSet]);
-  }
-  return combined;
+  return guluSets.map((guluSet, i) => shuffle([...guluSet, ...norlSets[i]]));
 }
 
 function buildPassiveExposureTrial2(word, isPlural, suffix, species, phase) {
@@ -576,7 +607,7 @@ function buildStage2Timeline() {
 
   // Each combined set has 8 trials (4 Gulu + 4 Norl).
   // Per rep: ~7 sets × (8 exposure + 8 FC) = ~112 trials.
-  // 2 reps × ~112 = ~224 trials total. ✓
+  // 2 reps × ~112 = ~224 trials total.
   // Sets are re-randomised each rep (new greedy draws for both species).
   for (let rep = 0; rep < 2; rep++) {
     const sets = buildStage2Sets();
