@@ -931,7 +931,9 @@ const end_screen = {
   stimulus: `
     <div class="instr-box">
       <h2>You're done!</h2>
-      <p>Thank you for completing this study. Your data has been saved. You may now close this window.</p>
+      <p>Thank you for completing this study. Your data has been saved.</p>
+      <p>Your completion code is: CWZA9TKT</p>
+      <p>You may now close this window.</p>
     </div>`,
   choices: [], // no button — participant just closes the tab
 };
