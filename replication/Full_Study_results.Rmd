@@ -1,0 +1,270 @@
+---
+title: "Experiment 1 Analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r packages}
+library(tidyverse)
+library(lme4)
+library(reshape2)
+library(gridExtra)
+```
+
+```{r helper-functions}
+# Extract legend from a ggplot for shared legend in combined figures
+g_legend <- function(a.gplot) {
+  tmp <- ggplot_gtable(ggplot_build(a.gplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  tmp$grobs[[leg]]
+}
+```
+
+# Step 1: Data Loading and Cleaning
+
+```{r load-data}
+# Set this to the folder containing all 25 participant CSV files
+data_dir <- "/Users/rebeccapizzitola/Documents/GitHub/ling-245b-project/replication/data/fullSample"
+
+# Read and combine all CSV files
+raw_data <- list.files(
+  path       = data_dir,
+  pattern    = "^exp1_.*\\.csv$",
+  full.names = TRUE
+) |>
+  lapply(read_csv, col_types = cols(.default = "c")) |>
+  bind_rows()
+
+# Coerce columns to appropriate types
+# Note: use .data$rt to avoid collision with base R's rt() function
+raw_data <- raw_data |>
+  mutate(
+    rt           = as.numeric(.data$rt),
+    correct      = as.logical(.data$correct),
+    is_novel     = as.logical(.data$is_novel),
+    chose_nup    = as.numeric(.data$chose_nup),
+    chose_norl   = as.numeric(.data$chose_norl),
+    points_total = as.numeric(.data$points_total)
+  )
+
+cat("Total rows loaded:", nrow(raw_data), "\n")
+cat("Participants found:", n_distinct(raw_data$subject_id, na.rm = TRUE), "\n")
+cat("Conditions:", paste(unique(na.omit(raw_data$condition)), collapse = ", "), "\n")
+```
+
+```{r participant-scores}
+# Compute each participant's final score as the maximum points_total
+# reached during stage1/stage2 forced_choice trials
+participant_scores <- raw_data |>
+  filter(task == "forced_choice", !is.na(points_total)) |>
+  group_by(subject_id) |>
+  summarise(score = max(points_total), .groups = "drop")
+
+# Compute each participant's total experiment duration in minutes
+# (time_elapsed is in milliseconds; take the max value per participant)
+participant_duration <- raw_data |>
+  mutate(time_elapsed = as.numeric(time_elapsed)) |>
+  group_by(subject_id) |>
+  summarise(duration_min = max(time_elapsed, na.rm = TRUE) / 60000, .groups = "drop")
+
+# Build a participant-level summary table
+participant_info <- raw_data |>
+  filter(!is.na(subject_id)) |>
+  distinct(subject_id, condition) |>
+  left_join(participant_scores,  by = "subject_id") |>
+  left_join(participant_duration, by = "subject_id")
+
+cat("Participants per condition:\n")
+print(count(participant_info, condition))
+
+cat("\nScore summary:\n")
+print(summary(participant_info$score))
+
+cat("\nDuration summary (minutes):\n")
+print(summary(participant_info$duration_min))
+```
+
+```{r filter-test-trials}
+# --- Suffix selection trials ---
+# Rows where task == "suffix_selection"
+# Key columns:
+#   species       -> CriticalStimuli (alien shown: Norl or Gulu)
+#   chose_nup     -> response (1 = nup, 0 = dup)
+#   is_novel      -> novelty (TRUE = unseen word, FALSE = seen word)
+#   word_root     -> random effect
+#   subject_id    -> random effect
+#   condition     -> fixed effect
+
+suffix_data <- raw_data |>
+  filter(task == "suffix_selection") |>
+  select(subject_id, condition, word_root, is_novel,
+         critical_stimuli = species,
+         chose_nup, correct) |>
+  mutate(
+    is_novel         = ifelse(is_novel, "unseen", "seen"),
+    critical_stimuli = as.factor(critical_stimuli),
+    critical_stimuli = relevel(critical_stimuli, ref = "Norl"),
+    condition        = as.factor(condition),
+    condition        = relevel(condition, ref = "NoExposure"),
+    chose_nup        = as.numeric(chose_nup)
+  )
+
+cat("Suffix selection trials:", nrow(suffix_data), "\n")
+cat("Participants:", n_distinct(suffix_data$subject_id), "\n")
+
+
+# --- Alien selection trials ---
+# Rows where task == "alien_selection"
+# Key columns:
+#   suffix_shown  -> CriticalStimuli (suffix shown: dup or nup)
+#   chose_norl    -> response (1 = Norl, 0 = Gulu)
+#   is_novel      -> novelty
+#   word_root     -> random effect
+
+alien_data <- raw_data |>
+  filter(task == "alien_selection") |>
+  select(subject_id, condition, word_root, is_novel,
+         critical_stimuli = suffix_shown,
+         chose_norl, correct) |>
+  mutate(
+    is_novel         = ifelse(is_novel, "unseen", "seen"),
+    critical_stimuli = as.factor(critical_stimuli),
+    critical_stimuli = relevel(critical_stimuli, ref = "dup"),
+    condition        = as.factor(condition),
+    condition        = relevel(condition, ref = "NoExposure"),
+    chose_norl       = as.numeric(chose_norl)
+  )
+
+cat("Alien selection trials:", nrow(alien_data), "\n")
+cat("Participants:", n_distinct(alien_data$subject_id), "\n")
+```
+
+# Step 3: Main Results (Figures 3 & 4)
+
+```{r suffix-plot}
+# Compute per-participant nup rate by alien (Norl/Gulu) for suffix selection.
+# Each participant saw 38 trials per alien (76 total), matching the original's
+# denominator of 38.
+suffix_plot_data <- suffix_data |>
+  group_by(subject_id, condition, critical_stimuli) |>
+  summarise(
+    nup_count = sum(chose_nup, na.rm = TRUE),
+    n_trials  = n(),
+    nup_rate  = nup_count / 38,   # fixed denominator per original script
+    .groups   = "drop"
+  )
+
+fig3 <- ggplot(suffix_plot_data,
+               aes(x = critical_stimuli, y = nup_rate,
+                   group = condition, fill = condition, color = condition)) +
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(0.9)) +
+  stat_summary(fun.data = mean_cl_normal, geom = "errorbar",
+               width = 0.2, fun.args = list(conf.int = 0.95),
+               color = "black", position = position_dodge(0.9)) +
+  labs(x = "Alien stimulus in suffix selection",
+       y = "Probability of a nup response") +
+  ylim(0, 1) +
+  scale_color_manual(values = c("Exposure" = "#999999", "NoExposure" = "#999999")) +
+  scale_fill_manual(values  = c("Exposure" = "#999999", "NoExposure" = "white")) +
+  theme_bw() +
+  theme(legend.position = "bottom", legend.direction = "horizontal")
+
+fig3
+```
+
+```{r alien-plot}
+# Compute per-participant Norl rate by suffix (dup/nup) for alien selection.
+# Each participant saw 19-20 trials per suffix (38 total); original used 20
+# as denominator.
+alien_plot_data <- alien_data |>
+  group_by(subject_id, condition, critical_stimuli) |>
+  summarise(
+    norl_count = sum(chose_norl, na.rm = TRUE),
+    norl_rate  = norl_count / 20,   # fixed denominator per original script
+    .groups    = "drop"
+  )
+
+fig4 <- ggplot(alien_plot_data,
+               aes(x = critical_stimuli, y = norl_rate,
+                   group = interaction(critical_stimuli, condition),
+                   fill = condition, color = condition)) +
+  stat_summary(fun = mean, geom = "bar", position = position_dodge(0.9)) +
+  stat_summary(fun.data = mean_cl_normal, geom = "errorbar",
+               width = 0.2, fun.args = list(conf.int = 0.95),
+               color = "black", position = position_dodge(0.9)) +
+  labs(x = "Suffix stimulus in alien selection",
+       y = "Probability of a Norl response") +
+  ylim(0, 1) +
+  scale_color_manual(values = c("Exposure" = "#999999", "NoExposure" = "#999999")) +
+  scale_fill_manual(values  = c("Exposure" = "#999999", "NoExposure" = "white")) +
+  theme_bw() +
+  theme(legend.position = "bottom", legend.direction = "horizontal")
+
+fig4
+```
+
+# Step 4: Mixed-Effects Models (Table 2)
+
+```{r model-suffix}
+# Logistic GLMM for suffix selection
+# DV:       chose_nup (1 = nup, 0 = dup)
+# Fixed:    critical_stimuli (Norl ref) * condition (NoExposure ref)
+# Random:   (1 | word_root) + (1 | subject_id)
+
+model_suffix <- glmer(
+  chose_nup ~ critical_stimuli * condition + (1 | word_root) + (1 | subject_id),
+  family = binomial,
+  data   = suffix_data
+)
+
+summary(model_suffix)
+```
+
+```{r model-alien}
+# Logistic GLMM for alien selection
+# DV:       chose_norl (1 = Norl, 0 = Gulu)
+# Fixed:    critical_stimuli (dup ref) * condition (NoExposure ref)
+# Random:   (1 | word_root) + (1 | subject_id)
+
+model_alien <- glmer(
+  chose_norl ~ critical_stimuli * condition + (1 | word_root) + (1 | subject_id),
+  family = binomial,
+  data   = alien_data
+)
+
+summary(model_alien)
+```
+
+```{r model-suffix-novelty}
+# Appendix: suffix model with novelty as additional predictor
+# novelty: "seen" (ref) vs "unseen"
+
+suffix_data <- suffix_data |>
+  mutate(is_novel = relevel(as.factor(is_novel), ref = "seen"))
+
+model_suffix_novelty <- glmer(
+  chose_nup ~ critical_stimuli * condition * is_novel + (1 | word_root) + (1 | subject_id),
+  family = binomial,
+  data   = suffix_data
+)
+
+summary(model_suffix_novelty)
+```
+
+```{r model-alien-novelty}
+# Appendix: alien model with novelty as additional predictor
+
+alien_data <- alien_data |>
+  mutate(is_novel = relevel(as.factor(is_novel), ref = "seen"))
+
+model_alien_novelty <- glmer(
+  chose_norl ~ critical_stimuli * condition * is_novel + (1 | word_root) + (1 | subject_id),
+  family = binomial,
+  data   = alien_data
+)
+
+summary(model_alien_novelty)
+```
