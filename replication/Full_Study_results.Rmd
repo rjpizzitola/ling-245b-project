@@ -106,7 +106,7 @@ suffix_data <- raw_data |>
   mutate(
     is_novel         = ifelse(is_novel, "unseen", "seen"),
     critical_stimuli = as.factor(critical_stimuli),
-    critical_stimuli = relevel(critical_stimuli, ref = "Norl"),
+    critical_stimuli = relevel(critical_stimuli, ref = "Gulu"),
     condition        = as.factor(condition),
     condition        = relevel(condition, ref = "NoExposure"),
     chose_nup        = as.numeric(chose_nup)
@@ -132,7 +132,7 @@ alien_data <- raw_data |>
   mutate(
     is_novel         = ifelse(is_novel, "unseen", "seen"),
     critical_stimuli = as.factor(critical_stimuli),
-    critical_stimuli = relevel(critical_stimuli, ref = "dup"),
+    critical_stimuli = relevel(critical_stimuli, ref = "nup"),
     condition        = as.factor(condition),
     condition        = relevel(condition, ref = "NoExposure"),
     chose_norl       = as.numeric(chose_norl)
@@ -167,6 +167,7 @@ fig3 <- ggplot(suffix_plot_data,
   labs(x = "Alien stimulus in suffix selection",
        y = "Probability of a nup response") +
   ylim(0, 1) +
+  scale_x_discrete(limits = c("Gulu", "Norl")) +
   scale_color_manual(values = c("Exposure" = "#999999", "NoExposure" = "#999999")) +
   scale_fill_manual(values  = c("Exposure" = "#999999", "NoExposure" = "white")) +
   theme_bw() +
