@@ -211,7 +211,79 @@ Due to funding limitations, I only ran the full study on 25 participants. This i
 
 ## Results
 
+Summary of suffix-selection mle results:
 
+Generalized linear mixed model fit by maximum likelihood (Laplace Approximation) ['glmerMod']
+ Family: binomial  ( logit )
+Formula: chose_nup ~ critical_stimuli * condition + (1 | word_root) +      (1 | subject_id)
+   Data: suffix_data
+
+      AIC       BIC    logLik -2*log(L)  df.resid 
+   2178.9    2212.2   -1083.5    2166.9      1894 
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-2.2159 -0.7060 -0.3330  0.7368  5.6807 
+
+Random effects:
+ Groups     Name        Variance Std.Dev.
+ subject_id (Intercept) 0.36048  0.6004  
+ word_root  (Intercept) 0.02806  0.1675  
+Number of obs: 1900, groups:  subject_id, 25; word_root, 19
+
+Fixed effects:
+                                       Estimate Std. Error z value Pr(>|z|)    
+(Intercept)                              0.9956     0.2282   4.363 1.28e-05 ***
+critical_stimuliGulu                    -3.0419     0.2035 -14.947  < 2e-16 ***
+conditionExposure                       -0.7135     0.2871  -2.485    0.013 *  
+critical_stimuliGulu:conditionExposure   1.8995     0.2396   7.927 2.24e-15 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+            (Intr) crtc_G cndtnE
+crtcl_stmlG -0.327              
+condtnExpsr -0.772  0.261       
+crtcl_stG:E  0.277 -0.844 -0.332
+
+Summary of alien-selection mle results:
+
+Generalized linear mixed model fit by maximum likelihood (Laplace Approximation) ['glmerMod']
+ Family: binomial  ( logit )
+Formula: chose_norl ~ critical_stimuli * condition + (1 | word_root) +      (1 | subject_id)
+   Data: alien_data
+
+      AIC       BIC    logLik -2*log(L)  df.resid 
+   1087.3    1116.4    -537.6    1075.3       944 
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-2.1420 -0.7409 -0.3892  0.7811  2.5690 
+
+Random effects:
+ Groups     Name        Variance Std.Dev.
+ subject_id (Intercept) 0        0       
+ word_root  (Intercept) 0        0       
+Number of obs: 950, groups:  subject_id, 25; word_root, 19
+
+Fixed effects:
+                                      Estimate Std. Error z value Pr(>|z|)    
+(Intercept)                            -1.8871     0.2146  -8.793  < 2e-16 ***
+critical_stimulinup                     3.4106     0.2862  11.919  < 2e-16 ***
+conditionExposure                       1.2873     0.2478   5.195 2.05e-07 ***
+critical_stimulinup:conditionExposure  -2.3167     0.3349  -6.919 4.56e-12 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+            (Intr) crtcl_ cndtnE
+crtcl_stmln -0.750              
+condtnExpsr -0.866  0.650       
+crtcl_stm:E  0.641 -0.855 -0.740
+optimizer (Nelder_Mead) convergence code: 0 (OK)
+boundary (singular) fit: see help('isSingular')
+
+Results consistent with the original paper, shows a significant relationship between nup exposure in the learning stage and the probabilities of selecting nup given a Norl alien / the probabilities of selecting Norl given a nup suffix.
 
 ### Data preparation
 

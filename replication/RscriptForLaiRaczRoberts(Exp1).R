@@ -37,7 +37,7 @@ g_legend<-function(a.gplot){
   return(legend)}
 
 # Change to the local directory where you put "LaiRaczRobertsData.csv"
-setwd("Desktop/LaiRaczRoberts Data Rscripts")
+data_dir <- "/Users/rebeccapizzitola/Documents/GitHub/ling-245b-project/replication/"
 
 # import data
 d<- read_csv('LaiRaczRobertsData.csv', 
