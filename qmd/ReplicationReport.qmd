@@ -198,18 +198,19 @@ The original paper had a drag-and-drop portion of the alien-familiarization phas
 built-in drag and drop, so I've replaced it with some multiple choice identification questions. I don't expect
 this to affect the study.
 
-### Methods Addendum (Post Data Collection)
-
-You can comment this section out prior to final report with data collection.
+Due to funding limitations, I only ran the full study on 25 participants. This is 1/4 of the original paper's size, and not sufficient according to my power analysis, but I still yielded interesting and consistent results.
 
 #### Actual Sample
-  Sample size, demographics, data exclusions based on rules spelled out in analysis plan
+  n = 25
+  Demographics: Participants based in North America, speak English as a native language
+  No exclusions, all participants completed in a satisfactory time limit
 
 #### Differences from pre-data collection methods plan
-  Any differences from what was described as the original plan, or “none”.
+  None
 
 
 ## Results
+
 
 
 ### Data preparation
@@ -217,15 +218,43 @@ You can comment this section out prior to final report with data collection.
 Data preparation following the analysis plan.
 	
 ```{r include=F}
+
+### Setup
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
 ### Data Preparation
 
 #### Load Relevant Libraries and Functions
+library(tidyverse)
+library(lme4)
+library(reshape2)
+library(gridExtra)
 
 #### Import data
+data_dir <- "/Users/rebeccapizzitola/Documents/GitHub/ling-245b-project/replication/data/fullSample"
 
 #### Data exclusion / filtering
+# Read and combine all CSV files
+raw_data <- list.files(
+  path       = data_dir,
+  pattern    = "^exp1_.*\\.csv$",
+  full.names = TRUE
+) |>
+  lapply(read_csv, col_types = cols(.default = "c")) |>
+  bind_rows()
 
 #### Prepare data for analysis - create columns etc.
+# Coerce columns to appropriate types
+# Note: use .data$rt to avoid collision with base R's rt() function
+raw_data <- raw_data |>
+  mutate(
+    rt           = as.numeric(.data$rt),
+    correct      = as.logical(.data$correct),
+    is_novel     = as.logical(.data$is_novel),
+    chose_nup    = as.numeric(.data$chose_nup),
+    chose_norl   = as.numeric(.data$chose_norl),
+    points_total = as.numeric(.data$points_total)
+  )
 ```
 
 ### Confirmatory analysis
