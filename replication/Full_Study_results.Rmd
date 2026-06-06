@@ -210,33 +210,28 @@ fig4
 # Step 4: Mixed-Effects Models (Table 2)
 
 ```{r model-suffix}
-# Logistic GLMM for suffix selection
-# DV:       chose_nup (1 = nup, 0 = dup)
-# Fixed:    critical_stimuli (Norl ref) * condition (NoExposure ref)
-# Random:   (1 | word_root) + (1 | subject_id)
+# Relevel factors for suffix model
+suffix_data$condition <- relevel(factor(suffix_data$condition), ref = "NoExposure")
+suffix_data$critical_stimuli <- relevel(factor(suffix_data$critical_stimuli), ref = "Gulu")
 
-model_suffix <- glmer(
-  chose_nup ~ critical_stimuli * condition + (1 | word_root) + (1 | subject_id),
-  family = binomial,
-  data   = suffix_data
-)
+# Suffix selection model
+suffix_model <- glmer(chose_nup ~ critical_stimuli * condition + 
+                        (1 | word_root) + (1 | subject_id),
+                      data = suffix_data,
+                      family = binomial)
 
-summary(model_suffix)
-```
+# Relevel factors for alien model
+alien_data$condition <- relevel(factor(alien_data$condition), ref = "NoExposure")
+alien_data$critical_stimuli <- relevel(factor(alien_data$critical_stimuli), ref = "dup")
 
-```{r model-alien}
-# Logistic GLMM for alien selection
-# DV:       chose_norl (1 = Norl, 0 = Gulu)
-# Fixed:    critical_stimuli (dup ref) * condition (NoExposure ref)
-# Random:   (1 | word_root) + (1 | subject_id)
+# Alien selection model
+alien_model <- glmer(chose_norl ~ critical_stimuli * condition + 
+                       (1 | word_root) + (1 | subject_id),
+                     data = alien_data,
+                     family = binomial)
 
-model_alien <- glmer(
-  chose_norl ~ critical_stimuli * condition + (1 | word_root) + (1 | subject_id),
-  family = binomial,
-  data   = alien_data
-)
-
-summary(model_alien)
+summary(suffix_model)
+summary(alien_model)
 ```
 
 ```{r model-suffix-novelty}
